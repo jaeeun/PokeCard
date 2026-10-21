@@ -12,11 +12,11 @@ estimate, and build a personal collection. Built with SwiftUI + MVVM.
 - 🔐 **Auth** — Email/password + Google sign-in via Firebase.
 - 🏠 **Cute home** — pick *Scan* or *My Collection* from a friendly, pastel UI.
 - 🎯 **Scan** — live camera preview with on-device card detection. Rounded
-  corner "guiding lines" snap to the detected card and glow green once it's
-  validated.
+corner "guiding lines" snap to the detected card and glow green once it's
+validated.
 - 🔎 **Validation** — the cropped card is read with on-device OCR; a heuristic
-  validator checks for *factual* card markers (HP, energy types, set number) to
-  decide whether it looks like a real card. No copyrighted artwork is used.
+validator checks for *factual* card markers (HP, energy types, set number) to
+decide whether it looks like a real card. No copyrighted artwork is used.
 - 💰 **Price estimate** — pluggable `PriceEstimating` service (stub included).
 - 📚 **Collection** — saved cards persist locally with SwiftData.
 
@@ -40,11 +40,13 @@ PokeCard/
 
 Key abstractions (so vendors can be swapped and the UI can be previewed):
 
-| Protocol | Default impl | Swap for |
-|---|---|---|
-| `AuthServicing` | `FirebaseAuthService` | mocks / other providers |
-| `CardRectangleDetecting` | `VisionRectangleDetector` | a CoreML/YOLO detector* |
-| `PriceEstimating` | `StubPriceEstimator` | a licensed pricing API |
+
+| Protocol                 | Default impl              | Swap for                 |
+| ------------------------ | ------------------------- | ------------------------ |
+| `AuthServicing`          | `FirebaseAuthService`     | mocks / other providers  |
+| `CardRectangleDetecting` | `VisionRectangleDetector` | a CoreML/YOLO detector\* |
+| `PriceEstimating`        | `StubPriceEstimator`      | a licensed pricing API   |
+
 
 \* If you add a YOLO/CoreML detector, train it on the **generic shape of a
 trading card**, never on copyrighted artwork. See `LICENSING.md`.
@@ -55,7 +57,7 @@ trading card**, never on copyrighted artwork. See `LICENSING.md`.
 2. `VisionRectangleDetector` finds the most card-like quad (aspect ≈ 0.716).
 3. `CardGuideOverlay` draws rounded corner brackets around the detected quad.
 4. On capture, the still is cropped to the quad and read by
-   `CardTextRecognizer` (Vision OCR).
+ `CardTextRecognizer` (Vision OCR).
 5. `PokemonCardValidator` scores the text against factual card markers.
 6. Valid cards can be saved to the SwiftData collection + priced.
 
@@ -70,9 +72,10 @@ Build and install straight onto a connected iPhone with one command:
 ```
 
 The script will:
+
 1. Verify the toolchain (full Xcode, `xcodebuild`, `devicectl`).
 2. Install **XcodeGen** via Homebrew if needed, then generate
-   `PokeCard.xcodeproj` from [`project.yml`](project.yml).
+ `PokeCard.xcodeproj` from [`project.yml`](project.yml).
 3. Resolve your Apple Developer **Team ID** (auto-detected, or pass it in).
 4. Build a signed `.app` for your device.
 5. Install it onto the connected iPhone with `xcrun devicectl`.
@@ -88,16 +91,17 @@ POKECARD_BUNDLE_ID=com.yourname.pokecard ./install.sh
 ```
 
 Requirements for on-device install:
+
 - **Full Xcode** installed (not just Command Line Tools).
 - An **Apple ID added to Xcode** (Xcode ▸ Settings ▸ Accounts). A *free*
-  Apple ID works, but the app expires after **7 days** — just re-run the script.
+Apple ID works, but the app expires after **7 days** — just re-run the script.
 - iPhone connected via USB (or Wi-Fi paired), unlocked, "Trust This Computer"
-  accepted, and **Developer Mode** enabled (Settings ▸ Privacy & Security ▸
-  Developer Mode) on iOS 16+.
+accepted, and **Developer Mode** enabled (Settings ▸ Privacy &amp; Security ▸
+Developer Mode) on iOS 16+.
 - Homebrew (only needed to auto-install XcodeGen).
 
 > First launch: if iOS blocks the app, trust the certificate at
-> Settings ▸ General ▸ VPN & Device Management ▸ (your Apple ID) ▸ Trust.
+> Settings ▸ General ▸ VPN &amp; Device Management ▸ (your Apple ID) ▸ Trust.
 
 Firebase/Google sign-in still needs `GoogleService-Info.plist` and the
 `REVERSED_CLIENT_ID` in `Info.plist` (see *Configure Firebase* below). Without
@@ -124,16 +128,16 @@ This repo contains the Swift source tree. Create an app target around it:
    - Delete the generated `ContentView.swift` / `App.swift`.
 2. Add the `PokeCard/` folder to the target ("Create groups").
 3. Set the target's **Info.plist** to `PokeCard/Resources/Info.plist`, or copy
-   the `NSCameraUsageDescription` and `CFBundleURLTypes` keys into your own.
+ the `NSCameraUsageDescription` and `CFBundleURLTypes` keys into your own.
 4. Deployment target: **iOS 17+** (required for SwiftData + the newer SwiftUI
-   APIs used here).
+ APIs used here).
 
 ### Add dependencies (Swift Package Manager)
 
 Xcode → **File ▸ Add Package Dependencies…**
 
 - `https://github.com/firebase/firebase-ios-sdk` → add **FirebaseAuth**
-  (and FirebaseCore).
+(and FirebaseCore).
 - `https://github.com/google/GoogleSignIn-iOS` → add **GoogleSignIn**.
 
 Pin to a specific version rather than "up to next major" for reproducible builds.
@@ -145,18 +149,18 @@ compiles before the packages are added (useful for UI previews).
 
 1. Create a Firebase project and an iOS app with your bundle ID.
 2. Enable **Email/Password** and **Google** providers in
-   *Authentication ▸ Sign-in method*.
+ *Authentication ▸ Sign-in method*.
 3. Download `GoogleService-Info.plist` and add it to the app target.
-   (It's git-ignored by default — keep it out of source control.)
+ (It's git-ignored by default — keep it out of source control.)
 4. Open `GoogleService-Info.plist`, copy the `REVERSED_CLIENT_ID` value, and
-   paste it into the `CFBundleURLSchemes` entry in `Info.plist`.
+ paste it into the `CFBundleURLSchemes` entry in `Info.plist`.
 
 If `GoogleService-Info.plist` is missing, the app still launches (auth calls
 return a clear "not configured" error) so you can work on the UI.
 
 ### 4. Run
 
-Build & run on a **physical device** (the camera isn't available in the
+Build &amp; run on a **physical device** (the camera isn't available in the
 simulator). Previews use a mock auth service and in-memory data.
 
 ## Privacy
@@ -169,6 +173,13 @@ simulator). Previews use a mock auth service and in-memory data.
 
 - Perspective-correct the crop before OCR for better accuracy.
 - Expose the camera buffer dimensions to the overlay for a pixel-perfect fit
-  under `.resizeAspectFill`.
+under `.resizeAspectFill`.
 - Replace the stub pricer with a licensed pricing API.
-- Optional iCloud/Firestore sync (update the privacy policy accordingly).
+- # Optional iCloud/Firestore sync (update the privacy policy accordingly).
+
+# PokeCard
+
+포켓몬 카드 수집용
+
+> > > > > > > af5fd24b31e1ce71aabd2086b33b69ce7b99c9dd
+

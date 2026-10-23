@@ -1,0 +1,6 @@
+venv/
+__pycache__/
+.pytest_cache/
+*.local
+.firebase/
+firebase-debug.log

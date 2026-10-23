@@ -15,6 +15,8 @@ struct CardValidation: Equatable {
     let confidence: Double            // 0...1 heuristic score
     let detectedName: String?         // best-guess card name (factual data)
     let detectedSetNumber: String?    // e.g. "123/198"
+    let detectedRegulationMark: String?  // e.g. "G" (single letter left of the set number)
+    let detectedRarity: RarityReading?   // optional: ●/◆/★ or JP/KR letter code (C/U/R…)
     let matchedSignals: [String]      // which markers fired (for debugging/UI)
 }
 
@@ -46,17 +48,22 @@ struct PokemonCardValidator {
         "풀", "불꽃", "물", "번개", "초능력", "격투", "악", "강철", "페어리", "드래곤", "무색"
     ]
 
-    // Set number like "123/198", "SV01 045/198", or "001/081C" (with an
-    // optional trailing letter used by some sets).
-    private let setNumberPattern = #"\b\d{1,3}\s?/\s?\d{1,3}[A-Za-z]?\b"#
+    // Set number parsing (e.g. "123/198", "001/081C") lives in
+    // `CardFooterParser`, which also splits off the regulation mark/rarity.
 
     /// Extracts the card's set number from recognized text, if present.
+    /// Any letter glued onto the number by OCR (e.g. the JP/KR rarity "C" in
+    /// "001/081C") is stripped — it's parsed separately as the rarity.
     /// Lightweight — safe to call on live frames for auto-capture gating.
     func setNumber(in text: RecognizedText) -> String? {
-        firstMatch(of: setNumberPattern, in: text.joined)
+        CardFooterParser.parseRow(text.joined)?.setNumber
     }
 
-    func validate(_ text: RecognizedText) -> CardValidation {
+    /// - Parameters:
+    ///   - text: full-card OCR.
+    ///   - footer: optional dedicated OCR of the card's bottom strip, used to
+    ///     read the regulation mark and rarity more reliably.
+    func validate(_ text: RecognizedText, footer: [RecognizedLine] = []) -> CardValidation {
         let haystack = text.joined
         var score = 0.0
         var signals: [String] = []
@@ -70,10 +77,19 @@ struct PokemonCardValidator {
             signals.append("type:\(et)")
         }
 
-        let setNumber = firstMatch(of: setNumberPattern, in: haystack)
+        let footerInfo = CardFooterParser.parse(footer: footer, fallbackLines: text.lines)
+        // The full-card read is the primary source for the set number (it's
+        // been reliable); the footer pass only fills it in when missing.
+        let setNumber = setNumber(in: text) ?? footerInfo.setNumber
         if let setNumber {
             score += 0.3
             signals.append("setNumber:\(setNumber)")
+        }
+        if let mark = footerInfo.regulationMark {
+            signals.append("regulation:\(mark)")
+        }
+        if let rarity = footerInfo.rarity {
+            signals.append("rarity:\(rarity.printed)")
         }
 
         // "HP" followed by digits is a very strong signal.
@@ -90,6 +106,8 @@ struct PokemonCardValidator {
             confidence: score,
             detectedName: guessName(from: text),
             detectedSetNumber: setNumber,
+            detectedRegulationMark: footerInfo.regulationMark,
+            detectedRarity: footerInfo.rarity,
             matchedSignals: signals
         )
     }

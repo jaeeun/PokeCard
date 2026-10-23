@@ -1,0 +1,14 @@
+{
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "runtime": "python312",
+      "ignore": ["venv", ".git", "__pycache__", "tests", "cli.py", "requirements-dev.txt", "*.local"]
+    }
+  ],
+  "emulators": {
+    "functions": { "port": 5001 },
+    "ui": { "enabled": true }
+  }
+}

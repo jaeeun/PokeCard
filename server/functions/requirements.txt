@@ -1,0 +1,2 @@
+firebase-functions==0.6.0
+tcgdex-sdk==2.3.0

@@ -123,6 +123,8 @@ struct CardDetailView: View {
             VStack(spacing: 14) {
                 infoRow("Name", card.name)
                 if let set = card.setNumber { infoRow("Set #", set) }
+                if let mark = card.regulationMark { infoRow("Regulation", mark) }
+                if let rarity = card.rarityLabel { infoRow("Rarity", rarity) }
                 infoRow("Estimated price", card.formattedPrice)
                 infoRow("Detection", String(format: "%.0f%%", card.detectionConfidence * 100))
                 infoRow("Added", card.dateAdded.formatted(date: .abbreviated, time: .shortened))
@@ -149,6 +151,8 @@ struct CardDetailView: View {
         CardDetailView(card: CollectedCard(
             name: "Sample Card",
             setNumber: "123/198",
+            regulationMark: "G",
+            rarity: RarityReading(rarity: .common, printed: "C"),
             estimatedPriceCents: 1299,
             detectionConfidence: 0.82
         ))

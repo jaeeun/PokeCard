@@ -345,6 +345,13 @@ private struct ScanResultPanel: View {
             if let set = validation.detectedSetNumber {
                 labelRow("Set #", set)
             }
+            if let mark = validation.detectedRegulationMark {
+                labelRow("Regulation", mark)
+            }
+            // Rarity is optional — only shown when a symbol/code was read.
+            if let rarity = validation.detectedRarity {
+                labelRow("Rarity", rarity.label)
+            }
             labelRow("Confidence", String(format: "%.0f%%", validation.confidence * 100))
 
             languageSection

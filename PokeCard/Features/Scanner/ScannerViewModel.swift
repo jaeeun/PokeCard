@@ -42,6 +42,8 @@ final class ScannerViewModel: ObservableObject {
 
     /// The cropped image kept for saving to the collection.
     private(set) var lastCapturedImage: CGImage?
+    /// Footer-strip OCR of the last capture (regulation mark / rarity).
+    private var lastFooterLines: [RecognizedLine] = []
 
     /// The language the latest result was read in (for display + re-read UI).
     @Published private(set) var recognizedLanguage: OCRLanguage?
@@ -265,7 +267,11 @@ final class ScannerViewModel: ObservableObject {
             text = await recognizer.recognize(in: corrected)
         }
         recognizedLanguage = text.detectedLanguage
-        let validation = validator.validate(text)
+        // Dedicated footer pass for the regulation mark / rarity. It's
+        // language-independent, so it's cached and reused on re-reads.
+        let footer = await recognizer.recognizeFooter(in: corrected)
+        lastFooterLines = footer
+        let validation = validator.validate(text, footer: footer)
         phase = .result(validation)
     }
 
@@ -278,7 +284,7 @@ final class ScannerViewModel: ObservableObject {
 
         let text = await recognizer.recognize(in: image, languages: [language])
         recognizedLanguage = language
-        let validation = validator.validate(text)
+        let validation = validator.validate(text, footer: lastFooterLines)
         phase = .result(validation)
     }
 
@@ -289,6 +295,8 @@ final class ScannerViewModel: ObservableObject {
         let card = CollectedCard(
             name: validation.detectedName ?? "Unknown card",
             setNumber: validation.detectedSetNumber,
+            regulationMark: validation.detectedRegulationMark,
+            rarity: validation.detectedRarity,
             imageFileName: fileName,
             detectionConfidence: validation.confidence
         )
@@ -308,6 +316,7 @@ final class ScannerViewModel: ObservableObject {
         phase = .searching
         detectedCard = nil
         lastCapturedImage = nil
+        lastFooterLines = []
         correctedCard = nil
         recognizedLanguage = nil
         resetAutoCaptureState()

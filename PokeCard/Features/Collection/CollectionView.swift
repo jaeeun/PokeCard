@@ -80,7 +80,12 @@ private struct CardCell: View {
                     .foregroundStyle(Theme.textPrimary)
                     .lineLimit(1)
                 if let set = card.setNumber {
-                    Text(set)
+                    // e.g. "[G] 001/198 ●" — mark and rarity only if detected.
+                    Text([
+                        card.regulationMark.map { "[\($0)]" },
+                        set,
+                        card.rarityPrinted ?? card.rarity.map { $0.symbol ?? $0.rawValue }
+                    ].compactMap { $0 }.joined(separator: " "))
                         .font(.caption)
                         .foregroundStyle(Theme.textSecondary)
                 }

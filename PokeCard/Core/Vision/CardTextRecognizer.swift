@@ -54,6 +54,12 @@ struct RecognizedText: Equatable {
     }
 }
 
+/// A single OCR'd line with its position (Vision-normalized, origin bottom-left).
+struct RecognizedLine: Equatable {
+    let text: String
+    let boundingBox: CGRect
+}
+
 final class CardTextRecognizer {
 
     /// Languages we'd like to read on cards: English, Japanese, Korean.
@@ -99,6 +105,44 @@ final class CardTextRecognizer {
                 continuation.resume(returning: RecognizedText(
                     lines: [], requestedLanguages: languages
                 ))
+            }
+        }
+    }
+
+    /// Fraction of the (upright) card height, from the bottom, that holds the
+    /// footer row: regulation mark, set code/number, and rarity.
+    static let footerHeightFraction: CGFloat = 0.14
+
+    /// Dedicated OCR pass over just the card's bottom strip. Uses Latin only
+    /// and disables language correction, which otherwise tends to drop or
+    /// "fix" lone letters like the regulation mark ("G") or rarity ("C").
+    /// Bounding boxes are Vision-normalized to the strip (origin bottom-left).
+    func recognizeFooter(in cardImage: CGImage) async -> [RecognizedLine] {
+        let w = cardImage.width
+        let h = cardImage.height
+        let stripHeight = Int(CGFloat(h) * Self.footerHeightFraction)
+        guard w > 0, stripHeight > 0,
+              let strip = cardImage.cropping(to: CGRect(x: 0, y: h - stripHeight, width: w, height: stripHeight))
+        else { return [] }
+
+        return await withCheckedContinuation { continuation in
+            let request = VNRecognizeTextRequest { request, _ in
+                let lines = (request.results as? [VNRecognizedTextObservation] ?? [])
+                    .compactMap { obs -> RecognizedLine? in
+                        guard let s = obs.topCandidates(1).first?.string else { return nil }
+                        return RecognizedLine(text: s, boundingBox: obs.boundingBox)
+                    }
+                continuation.resume(returning: lines)
+            }
+            request.recognitionLevel = .accurate
+            request.usesLanguageCorrection = false
+            request.recognitionLanguages = [OCRLanguage.english.visionCode]
+
+            let handler = VNImageRequestHandler(cgImage: strip, options: [:])
+            do {
+                try handler.perform([request])
+            } catch {
+                continuation.resume(returning: [])
             }
         }
     }
